@@ -45,7 +45,29 @@ class lm_stock:
         else :
             return False 
                     
+    def print_stock_statistics(self):
         
+        if self.is_in_hdf5store() == False :
+            print "No record of stock %s found in database" %(self.symbol)
+            exit(0)
+        
+        data =read_hdf(self.dataFile, self.symbol)
+        
+        print data.info()
+        
+    def get_stock_return(self,start,end):
+        
+        if self.is_in_hdf5store() == False :
+            print "No record of stock %s found in database" %(self.symbol)
+            exit(0)
+            
+        data =read_hdf(self.dataFile, self.symbol,where='index>=start & index <= end',columns=['Adj Close',])
+        
+        if data is None:
+            print "No record of stock %s found in database from %s to %s, please update the database" %(self.symbol,start,end)
+            exit(0)
+        
+        return (data['Adj Close'][-1]/data['Adj Close'][0] - 1, data['Adj Close'][0],data['Adj Close'][-1] )
 
     def get_stock_data (self):
 
