@@ -10,7 +10,61 @@ import os
 import json
 from pandas import read_hdf
 import sys
+import matplotlib.pyplot as plt
 
+
+def get_tech_graph():
+    
+    symbol = raw_input('input the stock symbol: ')
+    
+    stock = lm_stock()
+    
+    stock.symbol = symbol  
+    
+    start = raw_input('input the start date(month/day/year): ')
+    
+    end   = raw_input('input the end date(month/day/year): ')
+    
+    data = stock.get_stock_indicator(start,end)
+    
+    fig = plt.figure()
+    
+    #num_of_row,num_of_col,fig_num    
+    plt.subplot(311)
+    
+    plt.title(symbol)
+    
+    plt.plot(data['Adj Close'], 'r',lw=1.5, label='Adj close')
+    plt.plot(data['ma5'], 'g',lw=1.5, label='MA5')
+    plt.plot(data['bol_upper'], 'b',lw=1.5 )
+    plt.plot(data['bol_lower'], 'b',lw=1.5 )
+    plt.legend(loc=0,prop={'size':8})
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+
+    
+    plt.subplot(312)
+    plt.plot(data['dif'],'r',lw=1.5,label='dif')
+    plt.plot(data['dea'],'y',lw=1.5,label='dea')
+    plt.bar(data.index,data['macd'],color='g')
+    plt.legend(loc=0)
+    plt.gca().xaxis.set_major_locator(plt.NullLocator()) #hide the axix_x label
+
+    plt.subplot(313)
+    plt.plot(data['k'], 'y',lw=1.5 )
+    plt.plot(data['d'], 'c',lw=1.5 )
+    plt.plot(data['j'], 'm',lw=1.5 )
+    plt.legend(loc=0,prop={'size':4})
+    
+    plt.setp(plt.gca().get_xticklabels(), rotation=30)
+
+    #fig.tight_layout()
+    
+    res = symbol + '_tech'+'.png'
+    
+    fig.savefig(res)
+        
+    print "%s has been saved " %(res)
+    
 def get_stock_ret():
     
     symbol = raw_input('input the stock symbol: ')
@@ -234,7 +288,7 @@ if __name__ == "__main__":
         
     if para == '-ask':
         
-        user_ask = raw_input('What do you want to know? (rank/stock_db_info/stock_list/get_stock_ret):')
+        user_ask = raw_input('What do you want to know? (rank/stock_db_info/stock_list/get_stock_ret/get_tech_graph):')
         
         if user_ask == 'rank' or user_ask == 'r':
             rank_stock ()
@@ -247,6 +301,9 @@ if __name__ == "__main__":
             
         if user_ask == 'get_stock_re' or user_ask == 'gsr':            
             get_stock_ret()
+            
+        if user_ask == 'get_tech_graph'  or user_ask == 'gtg':
+            get_tech_graph()
 
     if para == '-debug':
         create_or_update_stock_db(1)
