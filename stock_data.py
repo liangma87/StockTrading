@@ -13,6 +13,9 @@ import os
 import json
 from pandas import read_hdf
 
+# after the calculation of the techical indication are stable, we should store them in the database as well
+# so we don't need to do the calculation later on
+
 class lm_stock:
     
     '''A customer of ABC Bank with a checking account. Customers have the
@@ -54,9 +57,45 @@ class lm_stock:
         data =read_hdf(self.dataFile, self.symbol)
         
         print data.info()
+            
+    def get_stock_indicator(self,start,end):
+        
+        data =read_hdf(self.dataFile, self.symbol,where='index>=start & index <= end')
+        
+        data['ma5']  = pd.rolling_mean(data['Adj Close'], window=5).bfill()
+        data['ma20'] = pd.rolling_mean(data['Adj Close'], window=20).bfill()
+        data['ma50'] = pd.rolling_mean(data['Adj Close'], window=50).bfill()
+
+        data['bol_upper'] = pd.rolling_mean(data['Adj Close'], window=20).bfill() + 2* pd.rolling_std(data['Adj Close'], 20, min_periods=20).bfill()
+        data['bol_lower'] = pd.rolling_mean(data['Adj Close'], window=20).bfill() - 2* pd.rolling_std(data['Adj Close'], 20, min_periods=20).bfill()      
+        data['bol_bw'] = ((data['bol_upper'] - data['bol_lower'])/data['ma20'])*100
+        
+                
+        data['exma12'] = pd.ewma(data['Adj Close'], span=12).bfill()
+        
+        data['exma26'] = pd.ewma(data['Adj Close'], span=26).bfill()
+        
+        data['dif'] = data['exma12'] - data['exma26']
+        
+        data['dea'] = pd.ewma(data['dif'],span=9).bfill()
+        
+        data['macd'] = (data['dif'] - data['dea']) * 2
+        
+        #seems 百度百科对KDJ的算法介绍是错误的
+        data['k'] = ((data['Adj Close'] - pd.rolling_min(data['Adj Close'],window=9).bfill())/
+                     (pd.rolling_max(data['Adj Close'],window=9).bfill()-pd.rolling_min(data['Adj Close'],window=9).bfill()))*100
+        
+        data['d'] = pd.ewma(data['k'],span=3).bfill()
+        
+        data['j'] = 3 * data['d'] - 2 * data['k']
+        
+
+        return data        
+        
         
     def get_stock_return(self,start,end):
         
+        #maybe we can get the log daily return (any return betwen the days will just be a minus operation after)
         if self.is_in_hdf5store() == False :
             print "No record of stock %s found in database" %(self.symbol)
             exit(0)
